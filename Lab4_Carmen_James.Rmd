@@ -7,7 +7,22 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+setwd("C:/Users/TruongGiang/OneDrive/Work documents/MIDS Berkeley/W203-1/lab_4/Lab4_Prenatal_Infant_Health")
+load("bwght_w203.RData")
+summary(data)
+ls()
+plot(data$bwght, data$npvis)
+
 ```
+
+Note: 
+1. We will spend time on Exploratory Data Analysis to understand each variables, possible transformation, whether we should create a new variable
+2. We will put different hypothesises about whether a particular variable should be included, does it help (Evaluate Bias Variance trade off analysis)
+3. Key output:  Produce 3 candidate models that meet the requirement
+4. Test CLM assumptions
+5. Model spec presentation including standard error and statistical and practical significance 
+6.6, 7 quetion can be done later.
+
 
 ## R Markdown
 
