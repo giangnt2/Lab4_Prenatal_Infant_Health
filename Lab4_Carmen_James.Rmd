@@ -11,15 +11,105 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
+```{r}
+setwd("~/Desktop/MIDS/Statistics/Labs/Lab4/")
+load("bwght_w203.Rdata")
+library(lmtest)
+library(sandwich)
+```
+
 # Exploratory Data Analysis
+
+```{r}
+# Might want to beef up this section 
+
+#Mom
+hist(data$mage) #Very normal, avg late 20s
+hist(data$magesq) #Slightly right skewed
+hist(data$meduc) #Spikes at 12 and 16
+hist(data$cigs) #Big mass at 0. Right skewed. Above 20, corresponds to packs.
+hist(data$drink) #Big mass at 0. Right skewed.
+
+#Dad
+hist(data$fage) #Slight right skew, avg early 30s
+hist(data$feduc) #Spikes at 12 and 16
+
+#Prenatal care
+hist(data$monpre) #Majority begin in first 2 months; right skewed
+hist(data$npvis) #Spike at 10-15 visits
+hist(data$npvissq) #Right skewed
+
+#Baby
+hist(data$bwght) #Normalish, avg 3000-3500 grams (6.6-7.7 lbs)
+hist(data$lbwght) #Bit left skewed
+hist(data$omaps) #Left skewed, almost all 8 or 9
+hist(data$fmaps) #Left skewed, almost all 9
+table(data$lbw) #Only 30 lbw (1.6%)
+table(data$vlbw) #Only 13 vlbw (0.7%)
+table(data$male) #941 male (51.4%)
+```
+
+```{r}
+#Race Table
+mrace <- as.factor(c())
+levels(mrace) <- c("white", "black", "other")
+
+for (i in 1:length(data$bwght)){
+  if (data[i,]$mwhte == 1) {mrace[i] <- "white"}
+  else if (data[i,]$mblck == 1) {mrace[i] <- "black"}
+  else if (data[i,]$moth == 1) {mrace[i] <- "other"}
+}
+
+frace <- as.factor(c())
+levels(frace) <- c("white", "black", "other")
+
+for (i in 1:length(data$bwght)){
+  if (data[i,]$fwhte == 1) {frace[i] <- "white"}
+  else if (data[i,]$fblck == 1) {frace[i] <- "black"}
+  else if (data[i,]$foth == 1) {frace[i] <- "other"}
+}
+
+table(mrace, frace)
+
+# Could do a boxplot by race, e.g.:
+boxplot(meduc ~ mrace, data = data)
+# But black & other plots don't have a lot of data
+```
+
 
 # Model Specifications
 
+Explain:
+- We are excluding lbw, vlbw
+- Using white as the baseline category for race because 90% of people are white (is data for other 2 races reliable?)
+- Using bwght as outcome and not omaps or fmaps
+
 ### Model 1
+
+```{r}
+model1 <- lm(bwght ~ monpre + npvis + npvissq, data = data)
+coeftest(model1, vcov = vcovHC) # All significant; concerned that monpre coefficient is positive
+plot(model1) # Meets assumptions relatively well
+AIC(model1)
+```
 
 ### Model 2
 
+```{r}
+model2 <- lm(bwght ~ monpre + npvis + npvissq + cigs + drink + mage + magesq + meduc + fage + feduc + male + mblck + moth, data = data)
+coeftest(model2, vcov = vcovHC) # Significant vars: monpre (still positive), npvis, cigs, mage, male, moth
+plot(model2) # Meets assumptions relatively well
+AIC(model2) # Lower than model 1
+```
+
 ### Model 3
+
+```{r}
+model3 <- lm(bwght ~ monpre + npvis + npvissq + cigs + drink + mage + magesq + meduc + fage + feduc + male + mblck + moth + fblck + foth, data = data)
+coeftest(model3, vcov = vcovHC) # Same significant vars as model 2 except: mother race no longer significant but father race is
+plot(model3) # Meets assumptions relatively well
+AIC(model3) # Basically the same as model 2
+```
 
 # Assessment of CLM Assumptions
 
