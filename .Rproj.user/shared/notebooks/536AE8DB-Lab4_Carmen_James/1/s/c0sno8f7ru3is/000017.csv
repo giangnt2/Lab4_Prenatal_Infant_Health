@@ -1,0 +1,5 @@
+"0","### Clean up NA values "
+"0","v = na.exclude(data, complete.cases(v))"
+"0","# Might want to beef up this section "
+"0","#Mom"
+"0","hist(v$mage) #Very normal, avg late 20s"

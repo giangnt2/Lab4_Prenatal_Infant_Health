@@ -7,109 +7,181 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+load("bwght_w203.Rdata")
+library(lattice)
+library(caret)
+library(lmtest)
+library(sandwich)
+library(corrplot)
+library(scales)
+
+
 ```
 
 # Introduction
 
-```{r}
-setwd("~/Desktop/MIDS/Statistics/Labs/Lab4/")
-load("bwght_w203.Rdata")
-library(lmtest)
-library(sandwich)
-```
-
 # Exploratory Data Analysis
 
 ```{r}
+### Clean up NA values 
+v = na.exclude(data, complete.cases(v))
+
 # Might want to beef up this section 
 
 #Mom
-hist(data$mage) #Very normal, avg late 20s
-hist(data$magesq) #Slightly right skewed
-hist(data$meduc) #Spikes at 12 and 16
-hist(data$cigs) #Big mass at 0. Right skewed. Above 20, corresponds to packs.
-hist(data$drink) #Big mass at 0. Right skewed.
+hist(v$mage) #Very normal, avg late 20s
+hist(v$magesq) #Slightly right skewed
+hist(v$meduc) #Spikes at 12 and 16
+hist(v$cigs) #Big mass at 0. Right skewed. Above 20, corresponds to packs.
+hist(v$drink) #Big mass at 0. Right skewed.
 
 #Dad
-hist(data$fage) #Slight right skew, avg early 30s
-hist(data$feduc) #Spikes at 12 and 16
+hist(v$fage) #Slight right skew, avg early 30s
+hist(v$feduc) #Spikes at 12 and 16
 
 #Prenatal care
-hist(data$monpre) #Majority begin in first 2 months; right skewed
-hist(data$npvis) #Spike at 10-15 visits
-hist(data$npvissq) #Right skewed
+hist(v$monpre) #Majority begin in first 2 months; right skewed
+hist(v$npvis) #Spike at 10-15 visits
+hist(v$npvissq) #Right skewed
 
 #Baby
-hist(data$bwght) #Normalish, avg 3000-3500 grams (6.6-7.7 lbs)
-hist(data$lbwght) #Bit left skewed
-hist(data$omaps) #Left skewed, almost all 8 or 9
-hist(data$fmaps) #Left skewed, almost all 9
-table(data$lbw) #Only 30 lbw (1.6%)
-table(data$vlbw) #Only 13 vlbw (0.7%)
-table(data$male) #941 male (51.4%)
+hist(v$bwght) #Normalish, avg 3000-3500 grams (6.6-7.7 lbs)
+hist(v$lbwght) #Bit left skewed
+hist(v$omaps) #Left skewed, almost all 8 or 9
+hist(v$fmaps) #Left skewed, almost all 9
+table(v$lbw) #Only 30 lbw (1.6%)
+table(v$vlbw) #Only 13 vlbw (0.7%)
+table(v$male) #941 male (51.4%)
+
+
 ```
+
 
 ```{r}
 #Race Table
 mrace <- as.factor(c())
 levels(mrace) <- c("white", "black", "other")
 
-for (i in 1:length(data$bwght)){
-  if (data[i,]$mwhte == 1) {mrace[i] <- "white"}
-  else if (data[i,]$mblck == 1) {mrace[i] <- "black"}
-  else if (data[i,]$moth == 1) {mrace[i] <- "other"}
+for (i in 1:length(v$bwght)){
+  if (v[i,]$mwhte == 1) {mrace[i] <- "white"}
+  else if (v[i,]$mblck == 1) {mrace[i] <- "black"}
+  else if (v[i,]$moth == 1) {mrace[i] <- "other"}
 }
 
 frace <- as.factor(c())
 levels(frace) <- c("white", "black", "other")
 
-for (i in 1:length(data$bwght)){
-  if (data[i,]$fwhte == 1) {frace[i] <- "white"}
-  else if (data[i,]$fblck == 1) {frace[i] <- "black"}
-  else if (data[i,]$foth == 1) {frace[i] <- "other"}
+for (i in 1:length(v$bwght)){
+  
+  if (v[i,]$fwhte == 1) {frace[i] <- "white"}
+  else if (v[i,]$fblck == 1) {frace[i] <- "black"}
+  else if (v[i,]$foth == 1) {frace[i] <- "other"}
 }
 
 table(mrace, frace)
 
 # Could do a boxplot by race, e.g.:
-boxplot(meduc ~ mrace, data = data)
+boxplot(meduc ~ mrace, data = v)
 # But black & other plots don't have a lot of data
 ```
+##Correlation analysis
+We build a correlation matrix to identify pairs of variables that have high correlation relationship.
+```{r}
+cor=cor(v)
+corrplot(cor, method="circle",diag = FALSE)
+
+```
+
+Looking at the corelation matrix below, we can see that father and mother tend to be in the same race, father and mother's age are highly correlated and so are father's education and mother's education.
+Also, the education of mother and father correlate positively with the number of visits. Highly educated parents tend to pay more prenatal care visits and do it earlier.
 
 
 # Model Specifications
+## General Approach
+###Develop outcome variable 
+To evaluate the well being of a newborn baby, we combine the APGA scores which evaluate the baby health right after birth with  weight which also represent an important aspect of a newborn baby's well being.
+The new healthscore are weighted average of 5 minute APGA score, 10 minute APGA score and weight score. Because weight is in different scale so we rescale this variable to be in the same scale with APGA scores.
+We assume weight is more important than APGA score in this exersize so we give it a weight of 2 in the average fomular.
+```{r}
 
-Explain:
-- We are excluding lbw, vlbw
-- Using white as the baseline category for race because 90% of people are white (is data for other 2 races reliable?)
-- Using bwght as outcome and not omaps or fmaps
+
+v$weightScore <-rescale(v$bwght,to=c(0,10))
+v$healthScore = (v$omaps+v$fmaps+v$weightScore)/3
+hist(v$healthScore)  
+hist(v$omaps)
+hist(v$fmaps)
+hist(weightScore)
+                                            
+                                          
+```
+Unlinke weight distribution healthScore tend to skew to the right that reflect majority of newborn babies in the survey are in good state.
+###Selection of independent variables 
+We will not include outcome variables such as lbw, vlbw, bwght, fmaps, omaps in any model as these variables are after the fact do not help explain the questions of problem.
+Based on EDA, we will also not include highly correlated variables together in model 1, 2. For example knowing that mother's race and father's race are 90% correlated, we will not include them together.
+
+
+
+
 
 ### Model 1
+Based on common sense, our variables of interest would be month prenatal care began (monpre), total number of prenatal visits (npvis).
+
 
 ```{r}
-model1 <- lm(bwght ~ monpre + npvis + npvissq, data = data)
-coeftest(model1, vcov = vcovHC) # All significant; concerned that monpre coefficient is positive
-plot(model1) # Meets assumptions relatively well
+
+model1 <- lm(healthScore ~ monpre + npvis , data = v) 
+coeftest(model1, vcov = vcovHC) 
+plot(model1) 
+summary(model1)$r.square
 AIC(model1)
+cor(v$monpre, v$npvis)
+
+vif(model1)
+bptest(model1)
+hist(model1$residuals)
+
 ```
+The coefficent variance test show that both npvis and npvissq are statistically significant with npvissq is not practically significant.
+For the assumptions: 
+- CLM3: No perfect collinearity but vif for both npvis and npvissq are high. This shows that this model is subject to multicollinearity problem
+- CLM4: Zero conditional mean ok
+- CLM 5: Based on the graph, it looks like the data isn’t homoskedastic and shows that we should reject the
+null, meaning the data is hetroskedastic
+- CML 6: data is not good at first but turn to normal with larger value 
 
 ### Model 2
 
+In model 2, we add more variables that we believe will improve the accuracy of the prediction.
+First are the variables that are related to the mother and her behavior: age, drink, cigarette, education, her race
+We do not include father information about age, education and race as we pointed out that father and mother information are highly correlated.
+
 ```{r}
-model2 <- lm(bwght ~ monpre + npvis + npvissq + cigs + drink + mage + magesq + meduc + fage + feduc + male + mblck + moth, data = data)
+model2 <- lm(healthScore ~ monpre + npvis+ cigs + drink + mage +  meduc +  male + mwhte +mblck, data = v)
 coeftest(model2, vcov = vcovHC) # Significant vars: monpre (still positive), npvis, cigs, mage, male, moth
 plot(model2) # Meets assumptions relatively well
 AIC(model2) # Lower than model 1
+summary(model2)$r.square
+vif(model2)
+bptest(model2)
+
+
 ```
+-> Slight Improvement in accurancy (r squared improved and AIC is slightly reduced compared to model 1)
 
 ### Model 3
 
 ```{r}
-model3 <- lm(bwght ~ monpre + npvis + npvissq + cigs + drink + mage + magesq + meduc + fage + feduc + male + mblck + moth + fblck + foth, data = data)
-coeftest(model3, vcov = vcovHC) # Same significant vars as model 2 except: mother race no longer significant but father race is
+model3 <- lm(healthScore ~ monpre + npvis+ cigs + drink + mage +magesq+  meduc +  male + mwhte +mblck+fwhte+fblck, data = v)
+coeftest(model3, vcov = vcovHC) # Same significant vars as model 2 except suddenly race coeficients become significant 
 plot(model3) # Meets assumptions relatively well
 AIC(model3) # Basically the same as model 2
+summary(model3)$r.square
+vif(model3)
 ```
+So in Model 3, we added variables about the father's races which earlier pointed out to be very closely correlated with mother's race. 
+Some interesting effects now show up. mblck and mwhte coefficients now become significant but with negative values. This can be explained that in fact race is not significant but because we include highly correlated variables in, together they distort the test.  Father race have positive coefficient which is offsetted by negative coefficient values of mother race.
+Also, the VIF score show high values for all race variables which cleary mean the model become multicollinear.
+
 
 # Assessment of CLM Assumptions
 

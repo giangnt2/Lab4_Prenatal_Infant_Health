@@ -1,0 +1,3 @@
+"0","v$weightScore <-rescale(v$bwght,to=c(0,10))"
+"0","v$healthScore = (v$omaps+v$fmaps+v$weightScore)/3"
+"0","hist(v$healthScore)  "
