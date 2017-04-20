@@ -23,10 +23,8 @@ library(scales)
 # Exploratory Data Analysis
 
 ```{r}
-### Clean up NA values 
+# Clean up NA values 
 v = na.exclude(data, complete.cases(v))
-
-# Might want to beef up this section 
 
 #Mom
 hist(v$mage) #Very normal, avg late 20s
@@ -52,10 +50,7 @@ hist(v$fmaps) #Left skewed, almost all 9
 table(v$lbw) #Only 30 lbw (1.6%)
 table(v$vlbw) #Only 13 vlbw (0.7%)
 table(v$male) #941 male (51.4%)
-
-
 ```
-
 
 ```{r}
 #Race Table
@@ -84,17 +79,21 @@ table(mrace, frace)
 boxplot(meduc ~ mrace, data = v)
 # But black & other plots don't have a lot of data
 ```
-##Correlation analysis
+### Correlation analysis
+
 We build a correlation matrix to identify pairs of variables that have high correlation relationship.
+Looking at the corelation matrix below, we can see that the following are highly correlated:
+
+- Race of the baby's mother and father
+- Ages of the baby's mother and father
+- Education level of the baby's mother and father
+
+Also, the education levels of the mother and father correlate positively with the number of prenatal visits, indicating that highly educated parents tend to have more prenatal care visits and start them earlier.
+
 ```{r}
 cor=cor(v)
 corrplot(cor, method="circle",diag = FALSE)
-
 ```
-
-Looking at the corelation matrix below, we can see that father and mother tend to be in the same race, father and mother's age are highly correlated and so are father's education and mother's education.
-Also, the education of mother and father correlate positively with the number of visits. Highly educated parents tend to pay more prenatal care visits and do it earlier.
-
 
 # Model Specifications
 ## General Approach
