@@ -52,6 +52,11 @@ table(v$vlbw) #Only 13 vlbw (0.7%)
 table(v$male) #941 male (51.4%)
 ```
 
+Our dataset contains data on the race of both the father and mother of the baby, in the form of indicator variables for "white", "black", and "other" races. For illustrative purposes, we combine the indicator variables into a single "race" variable for each parent, which allows us to view a table of the parents' races. Two things stand out in this table:
+
+1. Almost 90% of parents in this dataset are white.
+2. Over 95% of couples lie along the diagonal of the table, which means the mother and father are the same race.
+
 ```{r}
 #Race Table
 mrace <- as.factor(c())
@@ -79,7 +84,7 @@ table(mrace, frace)
 boxplot(meduc ~ mrace, data = v)
 # But black & other plots don't have a lot of data
 ```
-### Correlation analysis
+### Correlation Analysis
 
 We build a correlation matrix to identify pairs of variables that have high correlation relationship.
 Looking at the corelation matrix below, we can see that the following are highly correlated:
@@ -96,38 +101,30 @@ corrplot(cor, method="circle",diag = FALSE)
 ```
 
 # Model Specifications
-## General Approach
-###Develop outcome variable 
-To evaluate the well being of a newborn baby, we combine the APGA scores which evaluate the baby health right after birth with  weight which also represent an important aspect of a newborn baby's well being.
-The new healthscore are weighted average of 5 minute APGA score, 10 minute APGA score and weight score. Because weight is in different scale so we rescale this variable to be in the same scale with APGA scores.
-We assume weight is more important than APGA score in this exersize so we give it a weight of 2 in the average fomular.
+
+### Outcome Variable
+
+To evaluate the well-being of a newborn baby, we combine two measures of a newborn's well-being: its two APGAR scores, which evaluate the baby's health immediately after birth, and its birth weight. Since APGAR scores are measured on a 0-10 discrete scale while birth weight is continuous, we have transformed birth weight to 0-10 scale so it can be more easily combined with the APGAR scores. Our new outcome variable `health Score` is a weighted average of the one-minute APGAR score, 5-minute APGAR score, and birth weight score. We assume weight is more important than the APGAR scores in this exercise, so we give it a weight of 2 in the average formula.
+
 ```{r}
-
-
-v$weightScore <-rescale(v$bwght,to=c(0,10))
-v$healthScore = (v$omaps+v$fmaps+v$weightScore)/3
+v$weightScore <- rescale(v$bwght,to=c(0,10))
+# Note: weightScore not weighted in the formula below. Is 2 the correct weight?
+v$healthScore <- (v$omaps+v$fmaps+v$weightScore)/3
+hist(v$weightScore)
 hist(v$healthScore)  
-hist(v$omaps)
-hist(v$fmaps)
-hist(weightScore)
-                                            
-                                          
 ```
-Unlinke weight distribution healthScore tend to skew to the right that reflect majority of newborn babies in the survey are in good state.
-###Selection of independent variables 
-We will not include outcome variables such as lbw, vlbw, bwght, fmaps, omaps in any model as these variables are after the fact do not help explain the questions of problem.
-Based on EDA, we will also not include highly correlated variables together in model 1, 2. For example knowing that mother's race and father's race are 90% correlated, we will not include them together.
 
+Unlike weight distribution, `healthScore` skews right, reflecting that the majority of newborn babies in the survey are in good health.
 
+### Selection of Independent Variables
 
-
+We will not include the variables `lbw` or `vlbw` in any model because these variables are a function of our outcome variable. In models 1 and 2 we will also exclude any variables that are highly correlated with each other, as determined in our **Correlation Analysis** section. For example, since we know that the mother's race and father's race have a correlation of 90%, we will not include them both in models 1 and 2.
 
 ### Model 1
+
 Based on common sense, our variables of interest would be month prenatal care began (monpre), total number of prenatal visits (npvis).
 
-
 ```{r}
-
 model1 <- lm(healthScore ~ monpre + npvis , data = v) 
 coeftest(model1, vcov = vcovHC) 
 plot(model1) 
@@ -141,12 +138,6 @@ hist(model1$residuals)
 
 ```
 The coefficent variance test show that both npvis and npvissq are statistically significant with npvissq is not practically significant.
-For the assumptions: 
-- CLM3: No perfect collinearity but vif for both npvis and npvissq are high. This shows that this model is subject to multicollinearity problem
-- CLM4: Zero conditional mean ok
-- CLM 5: Based on the graph, it looks like the data isn’t homoskedastic and shows that we should reject the
-null, meaning the data is hetroskedastic
-- CML 6: data is not good at first but turn to normal with larger value 
 
 ### Model 2
 
@@ -185,6 +176,13 @@ Also, the VIF score show high values for all race variables which cleary mean th
 # Assessment of CLM Assumptions
 
 ### Model 1
+
+- CLM1: ...
+- CLM2: ...
+- CLM3: No perfect collinearity but vif for both `npvis` and `npvissq` are high. This shows that this model is subject to a multicollinearity problem.
+- CLM4: Zero conditional mean ok
+- CLM5: Based on the graph, it looks like the data isn’t homoskedastic and shows that we should reject the null, meaning the data is hetroskedastic
+- CML6: data is not good at first but turn to normal with larger value 
 
 ### Model 2
 
