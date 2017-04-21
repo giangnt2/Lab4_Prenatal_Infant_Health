@@ -136,28 +136,30 @@ vif(model1)
 bptest(model1)
 hist(model1$residuals)
 ```
-The coefficent variance test shows that `npvis` and `npvissq` are statistically significant. However, our $R^2$ is very low. We need to include more covariates to explain the variation in newborn health, which we will do in our next model.
+The coefficent variance test shows that `npvis` and `npvissq` are statistically significant. *Add some comments on the coefficients.*
+
+However, our model's $R^2$ is very low. We need to include more covariates to explain the variation in newborn health, which we will do in our next model.
 
 ### Model 2
 
-In model 2, we add more variables that we believe will improve the accuracy of the prediction.
-First are the variables that are related to the mother and her behavior: age, drink, cigarette, education, her race
-We do not include father information about age, education and race as we pointed out that father and mother information are highly correlated.
+In Model 2, we add variables that we believe will improve the accuracy of our prediction *without introducing bias*.
+
+We add an indicator for the baby's gender and the variables that are related to the mother and her behavior: age, education, race, drinks per week, and cigarettes per day. We do not include information on the father's age, education, or race, since the mother's and father's information is highly correlated.
 
 ```{r}
-model2 <- lm(healthScore ~ monpre + npvis+ cigs + drink + mage +  meduc +  male + mwhte +mblck, data = v)
+model2 <- lm(healthScore ~ monpre + npvis + npvissq + male + cigs + drink + mage + meduc + mwhte + mblck, data = v)
 coeftest(model2, vcov = vcovHC) # Significant vars: monpre (still positive), npvis, cigs, mage, male, moth
 plot(model2) # Meets assumptions relatively well
 AIC(model2) # Lower than model 1
 summary(model2)$r.square
 vif(model2)
 bptest(model2)
-
-
 ```
 -> Slight Improvement in accurancy (r squared improved and AIC is slightly reduced compared to model 1)
 
 ### Model 3
+
+In Model 3, we include additional covariates that are problematic for our model, primarily because they are highly correlated with some of the variables we added in Model 2.
 
 ```{r}
 model3 <- lm(healthScore ~ monpre + npvis+ cigs + drink + mage +magesq+  meduc +  male + mwhte +mblck+fwhte+fblck, data = v)
@@ -167,7 +169,7 @@ AIC(model3) # Basically the same as model 2
 summary(model3)$r.square
 vif(model3)
 ```
-So in Model 3, we added variables about the father's races which earlier pointed out to be very closely correlated with mother's race. 
+
 Some interesting effects now show up. mblck and mwhte coefficients now become significant but with negative values. This can be explained that in fact race is not significant but because we include highly correlated variables in, together they distort the test.  Father race have positive coefficient which is offsetted by negative coefficient values of mother race.
 Also, the VIF score show high values for all race variables which cleary mean the model become multicollinear.
 
