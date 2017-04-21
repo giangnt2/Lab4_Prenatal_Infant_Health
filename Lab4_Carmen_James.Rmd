@@ -122,7 +122,7 @@ We will not include the variables `lbw` or `vlbw` in any model because these var
 
 ### Model 1
 
-Based on common sense, our variables of interest would be month prenatal care began (monpre), total number of prenatal visits (npvis).
+Our first model contains only our variables of interest, which are the number of prenatal visits `npvis` and the month in which prenatal care began `monpre`. We use robust standard errors in all of our models.
 
 ```{r}
 model1 <- lm(healthScore ~ monpre + npvis , data = v) 
@@ -135,9 +135,8 @@ cor(v$monpre, v$npvis)
 vif(model1)
 bptest(model1)
 hist(model1$residuals)
-
 ```
-The coefficent variance test show that both npvis and npvissq are statistically significant with npvissq is not practically significant.
+The coefficent variance test shows that `npvis` and `npvissq` are statistically significant. However, our $R^2$ is very low. We need to include more covariates to explain the variation in newborn health, which we will do in our next model.
 
 ### Model 2
 
