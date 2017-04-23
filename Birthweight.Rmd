@@ -206,7 +206,7 @@ Furthermore, our model's $R^2$ is very low. We need to include additional covari
     ```
 
 + CLM4 (Zero conditional mean): The residuals vs. fitted plot below shows that the red smoothing curve (signifying the mean of the residuals) is very close to zero for most of the fitted values. Thus we can assume zero-conditional mean for our model.
-
+pl
     ```{r}
     plot(model1, which=1)
     ```
@@ -330,22 +330,40 @@ plot(model3, which =2)
 
 # Summary of Results
 
-Please see the **Appendix** for a table showing our results for models 1, 2, and 3. Model 1 is the simplest and only shows our two variables of interest, `monpre` and `npvis`, of which `npvis` is statistically but not practically significant. Model 2 adds additional covariates and uncovers some interesting relationships between `bwght` and other predictor variables, while model 3 adds even more covariates but results in distorted coefficients for some variables due to their high correlations with other predictor variables.
+Please see the **Appendix** for a table showing our results for models 1, 2, and 3. Model 1 is the simplest and only shows our two variables of interest, `monpre` and `npvis`, of which `npvis` is statistically but not practically significant. Model 2 adds additiopnal covariates and uncovers some interesting relationships between `bwght` and other predictor variables, while model 3 adds even more covariates but results in distorted coefficients for some variables due to their high correlations with other predictor variables.
 
 Unfortunately all of these models have a low $R^2$, which means we are lacking some key variables that could explain infant birthweights.
 
 # Causality
 
 **Note from Carmen: I do not think this is what the assignment is asking us to do. We are making a lot of assumptions here and I don't support all of them (for example, the idea that a healthy mother makes fewer prenatal visits -- a mother who makes 0 prenatal visits is probably poor or unhealthy or lacks access to healthcare). Our week 14 async videos clearly define causality in terms of the model error, and so we should discuss that here.**
+In model1, model2 and model3, we  pointed out that the assumptions CLM1, CLM2, CLM3 are met. In all the models, npvis was also proved to be statistically significant while monpre is not significant so we now just investigate npvis.
+To further check the causality of npvis to baby weight, we test if the npvis is not correlated with the error term 
+```{r}
+cor(v$npvis, model1$residuals)
+cor(v$npvis, model2$residuals)
+cor(v$npvis, model3$residuals)
+```
+The numbers all come out to very near zero. This means that we can assume $d(bwght)/d(npvis) =beta_{npvis}$ as $d(u)/d(npvis) = 0 $
+So we can say that npvis does have positive causal effect to baby's weight (all npvis coefficients are positive).
+## Direction of biases
 
-We believe that there are other factors that can impact the weight of a newborn baby. These may include the mother's and father's health condition (e.g. diet or presence of specific conditions such as gestational diabetes), and the mother's quality of life during pregnancy (e.g. stress level), among others. Therefore, none of the above three models above accurately refects the causality of `npvis` and `monpre` on `bwght`.
+We believe that there are other factors that can impact the weight of a newborn baby. These may include the mother's and father's health condition (e.g. diet or presence of specific conditions such as gestational diabetes), and the mother's quality of life during pregnancy (e.g. stress level), income, among others. Therefore, none of the above three models above accurately refects the causality of `npvis` and `monpre` on `bwght`.
 
-However, we still can draw some conclusions about causality by making some additional assumptions. We will use model 1 in this analysis.
+However, we still can draw some conclusions about causality by making some additional assumptions. We will use model1 in this analysis.
 
-First, let's assume the only missing independent variable from model 1 compared to a 'true' population model is the mother's health fitness (`hf`). In model 1, from earlier analysis, `npvis` is the only significant variable so we can ignore `monpre`. We can safely assume that `hf` has a positive effect on the baby's weight -> $\beta_{hf} > 0$.
+First, let's assume the only missing independent variable from model 1 compared to a 'true' population model is the mother's income (`in`). In model 1, from earlier analysis, `npvis` is the only significant variable so we can ignore `monpre`. 
+There have been researches that pointed out low income can negatively impact infants's birth weight. 
+For exampnle: https://www.guttmacher.org/journals/psrh/2007/infants-low-birth-weight-linked-low-income-mothers-chronic-stress
 
-We also assume that the healthier the mother is, the fewer the number of prenatal visits she makes during preganancy, so the coeffient of `npvis` on `hf` is negative ($\beta_{npvis:hf} < 0$).
-So the bias is Beta(hf)*Beta(npvis:hf) < 0. In other words, the current regression coefficient in model 1 for npvis is less than it should be in the population model.
+We can safely assume that `in` has a positive effect on the baby's weight -> $\beta_{in} > 0$.
+
+
+We also assume that the better income the mother has, the more the number of prenatal visits she makes during preganancy, so the coeffient of `npvis` on `hf` is positive ($\beta_{npvis:in} > 0$).
+This can be crossed check from relavant researches in the field. This link (http://www.apa.org/pi/ses/resources/publications/women.aspx)
+cites this research: Lower income pregnant women receive less prenatal care, experience higher levels of stress and are more likely to deliver premature babies (Adler, 2006). 
+
+So the bias is Beta(in)*Beta(npvis:in) > 0. In other words, the current regression in model 1 for npvis seems to overestimate the coefficient for npvis.
 
 In model 1, we also included in addition to npvis the variable monpre. 
 It has relative high negative correlation with npvis (``r cor(v$npvis, v$monpre)``).
