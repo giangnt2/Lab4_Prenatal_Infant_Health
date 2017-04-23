@@ -65,7 +65,8 @@ Of the infants in our sample:
 APGAR scores are an ordinal measure ranging from 0-10, and are used soon after birth to rate the health of newborns. We have data on our newborns' APGAR scores one minute and five minutes after birth. These variables are highly left-skewed, as most newborns have a score of 8 or 9 after one minute, and have moved to a score of 9 or even 10 after five minutes.
 
 ```{r}
-plot.omaps <- ggplot(v, aes(x = omaps)) + geom_histogram(bins = 11) + ggtitle("Histograms of APGAR Scores") +
+plot.omaps <- ggplot(v, aes(x = omaps)) + geom_histogram(bins = 11) +
+  ggtitle("Histograms of APGAR Scores") +
   scale_x_continuous(name = "1-Minute APGAR Score", breaks = seq(0, 10, by = 2)) +
   scale_y_continuous(name = "# Infants", limits = c(0, 1500))
 plot.fmaps <- ggplot(v, aes(x = fmaps)) + geom_histogram(bins = 11) + ggtitle("") +
@@ -81,9 +82,9 @@ We have two ways of measuring prenatal care:
 1. `monpre` is the month prenatal care began and ranges from 0 to 9.
 2. `npvis` is the number of prenatal visits, and ranges from 0 to 40.
 
-These variables are somewhat negatively correlated (-`r round(cor(v$monpre, v$npvis), 3)`), since generally speaking, starting prenatal care earlier in pregnancy gives the mother more opportunities to make additional prenatal visits.
+These variables are somewhat negatively correlated (`r round(cor(v$monpre, v$npvis), 3)`), since generally speaking, starting prenatal care earlier in pregnancy gives the mother more opportunities to make additional prenatal visits.
 
-In our dataset, `monpre` most is right skewed and most mothers have begun prenatal care by their second month of pregnancy. Most mothers went for 10-15 prenatal visits during their pregnancy, but the variable has a long right tail. Mothers with an extremely high number of prenatal visits likely had a high-risk pregnancy for one reason or another.
+In our dataset, `monpre` is right skewed and most mothers have begun prenatal care by their second month of pregnancy. Most mothers went for 10-15 prenatal visits during their pregnancy, but the variable has a long right tail. Mothers with an extremely high number of prenatal visits likely had a high-risk pregnancy for one reason or another.
 
 ```{r}
 plot.monpre <- ggplot(v, aes(x = monpre)) + geom_histogram(bins = 10) +
@@ -117,11 +118,13 @@ We have the following information on the demographics of the mother, father, and
 + The mother's age is quite normally distributed, is postively correlated with the father's age (+`r round(cor(v$mage, v$fage), 3)`), and has a median of `r median(v$mage)`. Meanwhile, the father's age has a slightly higher median at `r median(v$fage)`, and has a slightly longer right tail.
 
     ```{r}
-    plot.mage <- ggplot(v, aes(x = mage)) + geom_histogram(binwidth = 2, fill = "red", alpha = 0.8) +
+    plot.mage <- ggplot(v, aes(x = mage)) +
+      geom_histogram(binwidth = 2, fill = "red", alpha = 0.8) +
       scale_x_continuous(name = "Mother's Age", limits = c(15,65)) +
       scale_y_continuous(name = "# Infants", limits = c(0, 350)) +
       ggtitle("Histograms of Parent Age")
-    plot.fage <- ggplot(v, aes(x = fage)) + geom_histogram(binwidth = 2, fill = "blue", alpha = 0.8) +
+    plot.fage <- ggplot(v, aes(x = fage)) +
+      geom_histogram(binwidth = 2, fill = "blue", alpha = 0.8) +
       scale_x_continuous(name = "Father's Age", limits = c(15,65)) +
       scale_y_continuous(name = "", limits = c(0, 350)) + ggtitle("")
     grid.arrange(plot.mage, plot.fage, ncol = 2)
@@ -130,11 +133,13 @@ We have the following information on the demographics of the mother, father, and
 + The mother's and father's educations are also quite positively correlated (+`r round(cor(v$meduc, v$feduc), 3)`), and have similar distributions with spikes at 12 years (high school diploma), 14 years (associate's degree), and 16 years (bachelor's degree).
 
     ```{r}
-    plot.meduc <- ggplot(v, aes(x = meduc)) + geom_histogram(binwidth = 1, fill = "red", alpha = 0.8) +
+    plot.meduc <- ggplot(v, aes(x = meduc)) +
+      geom_histogram(binwidth = 1, fill = "red", alpha = 0.8) +
       scale_x_continuous(name = "Mother's Education (Years)", limits = c(3,17)) +
       scale_y_continuous(name = "# Infants", limits = c(0, 600)) +
       ggtitle("Histograms of Parent Education")
-    plot.feduc <- ggplot(v, aes(x = feduc)) + geom_histogram(binwidth = 1, fill = "blue", alpha = 0.8) +
+    plot.feduc <- ggplot(v, aes(x = feduc)) +
+      geom_histogram(binwidth = 1, fill = "blue", alpha = 0.8) +
       scale_x_continuous(name = "Father's Education (Years)", limits = c(3,17)) +
       scale_y_continuous(name = "", limits = c(0, 600)) + ggtitle("")
     grid.arrange(plot.meduc, plot.feduc, ncol = 2)
@@ -169,13 +174,11 @@ We have the following information on the demographics of the mother, father, and
 
 ### Correlation Analysis
 
-We have created a correlation matrix to identify pairs of variables that are highly correlated. Looking at the corelation matrix below, we can see that the following are highly correlated:
+We have created a correlation matrix to identify pairs of variables that are highly correlated. Looking at the correlation matrix below, we can see that the following are highly correlated:
 
 - Race of the baby's mother and father
 - Ages of the baby's mother and father
 - Education level of the baby's mother and father
-
-Also, the education levels of the mother and father correlate positively with the number of prenatal visits, indicating that highly educated parents tend to have more prenatal care visits and start them earlier.
 
 ```{r}
 cor=cor(v)
@@ -190,11 +193,11 @@ To evaluate the well-being of a newborn baby, we will use `bwght` as the only de
 
 ### Selection of Independent Variables
 
-We will not include the variables `lbw` or `vlbw` in any model because these variables are a function of our outcome variable. In models 1 and 2 we will also exclude any variables that are highly correlated with each other, as determined in our **Correlation Analysis** section above. For example, since each of the pairs of mother and father race indicators (`mwhte`/`fwhte`, `mblck`/`fblck`, `moth`/`foth`) have a correlation of ~90%, we will not include the race indicators for both parents in models 1 and 2.
+We will not include the variables `lbw` or `vlbw` in any model because these variables are a function of our outcome variable. In models 1 and 2 we will also exclude any variables that are highly correlated with each other, as determined in our **Correlation Analysis** section above. For example, since each of the pairs of mother and father race indicators (`mwhte`/`fwhte`, `mblck`/`fblck`, `moth`/`foth`) each have a correlation of ~90%, we will not include the race indicators for both parents in models 1 and 2.
 
 ### Model 1
 
-Our first model contains only our variables of interest, which are the number of prenatal visits `npvis` and the month in which prenatal care began `monpre`. We use robust standard errors in all of our models.
+Our first model contains only our variables of interest, which are the number of prenatal visits (`npvis`) and the month in which prenatal care began (`monpre`). We use robust standard errors in all of our models.
 
 ```{r}
 model1 <- lm(bwght ~ monpre + npvis, data = v)
@@ -210,7 +213,7 @@ Furthermore, our model's $R^2$ is very low. We need to include additional covari
 
 + CLM1 (Linear in the parameters): The population model can be written as $bwght = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + ... + \beta_k x_k + u$, where $\beta_0$, $\beta_1$, ..., $\beta_k$ are the unknown parameters (constants) of interest and $u$ is an unobserved random error or disturbance term. This is the base assumption as we fit our data to a linear model.
 
-+ CLM2 (Random sampling): Our data comes from the CDC's National Center for Health Statistics, but it is not clear that it is a random sample. It is possible the data came from a certain community, since we see an unusually high percentage of white mothers (`r round(sum(v$mwhte)/length(v$mwhte)*100, 1)`%, whereas 61.6% of the general US population was white non-Hispanic in 2015).
++ CLM2 (Random sampling): Our data comes from the CDC's National Center for Health Statistics, but it is not clear that it is a random sample. It is possible the data came from a certain community, since we see an unusually high percentage of white mothers (`r round(sum(v$mwhte)/length(v$mwhte)*100, 1)`%, whereas 61.6% of the general US population was white non-Hispanic in 2015). However, without further information, we will proceed as if this assumptions is met.
 
 + CLM3 (No perfect collinearity): This assumption is met. None of the variables are constant, and there is no perfect colinearity between `bwght`, `npvis`, and `monpre`. Furthermore, VIF scores for the independent variables are less than 4.
 
@@ -222,7 +225,7 @@ Furthermore, our model's $R^2$ is very low. We need to include additional covari
     ```
 
 + CLM4 (Zero conditional mean): The residuals vs. fitted plot below shows that the red smoothing curve (signifying the mean of the residuals) is very close to zero for most of the fitted values. Thus we can assume zero-conditional mean for our model.
-pl
+
     ```{r}
     plot(model1, which=1)
     ```
@@ -233,7 +236,7 @@ pl
     bptest(model1)
     ```
 
-+ CML6 (Normality of errors): The distribution of residuals plot shows that residual distribution is quite close to the normal distribution shape. Furthermore, the Q-Q plot shows that our error follows the normal distribution quite closely. Therefore we can assume that CLM6 is met for model 1.
++ CML6 (Normality of errors): The distribution of residuals plot shows that the residual distribution is quite close to the normal distribution shape. Furthermore, the Q-Q plot shows that our error follows the normal distribution quite closely. Therefore we can assume that CLM6 is met for Model 1.
 
     ```{r}
     hist(model1$residuals, main ="Distribution of Model 1 Residuals", xlab = "Residual")
@@ -247,20 +250,21 @@ In Model 2, we add variables that we believe will improve the accuracy of our pr
 We add an indicator for the baby's gender and the variables that are related to the mother and her behavior: age, education, race, drinks per week, and cigarettes per day. We do not include information on the father's age, education, or race, since the mother's and father's information is highly correlated.
 
 ```{r}
-model2 <- lm(bwght ~ monpre + npvis + male + cigs + drink + mage + magesq + meduc + mwhte + mblck, data = v)
+model2 <- lm(bwght ~ monpre + npvis + male + cigs + drink + mage + magesq + meduc + mwhte +
+               mblck, data = v)
 coeftest(model2, vcov = vcovHC)
 summary(model2)$r.square
 AIC(model2)
 ```
 
-In model 2, `npvis` remains statistically significant and has a similar coefficient to model 1. In addition, `male`, `cigs`, `mage`, `magesq`, `monpre`, and race are statistically significant. On average:
+In Model 2, `npvis` remains statistically significant and has a similar coefficient to Model 1. In addition, `male`, `cigs`, `mage`, `magesq`, `monpre`, and race are statistically significant. On average:
 
 + Male babies are 92 grams (3.2 ounces) heavier at birth than females.
-+ An extra cigarette per day is associated with a 10 gram (0.35 ounces) reduction in birthweight. This is not practically significant, since a mother would need to smoke an additional 46 cigarettes *every day of her pregnancy* before we would expect to see a 1-pound reduction in weight.
++ An extra cigarette per day is associated with a 10-gram (0.35-ounce) reduction in birthweight. This is not practically significant, since a mother would need to smoke an additional 46 cigarettes *every day of her pregnancy* before we would expect to see a 1-pound reduction in weight.
 + The mother's age has a quadratic relationship with the weight of the baby. Birthweight is maximized when the mother is 31.7 years old, and declines at lower and higher ages. A 31.7-year-old mother's baby is 166 grams (5.9 ounces) heavier than a 20-year-old mother's baby, and 83 grams (2.9 ounces) heavier than a 40-year-old mother's baby.
 + White mothers give birth to babies that are 175 grams (6.2 ounces) heavier than mothers in the "other" race category. Black mothers give birth to babies that are 139 grams (4.9 ounces) heavier than "other" mothers, but this coefficient is only marginally statistically significant.
 
-We are concerned that the coefficient on `monpre` is positive, which would indicate that babies benefit (in terms of higher birthweight) from starting prenatal care *later* in the pregnancy. This relationship requires further study.
+We are concerned that the coefficient on `monpre` is positive, which would indicate that babies benefit (in terms of higher birthweight) from starting prenatal care *later* in the pregnancy. This relationship clearly requires further study, and is potentially distorted by the correlation between `monpre` and `npvis`.
 
 In any case, the $R^2$ on this model is only slightly higher than Model 1, and the AIC is only marginally lower, so this model is still missing some of the key factors in explaining a baby's birthweight.
 
@@ -290,12 +294,13 @@ In any case, the $R^2$ on this model is only slightly higher than Model 1, and t
     ```
 
 + CLM5 (Homoskedasticity): The width of the horizontal band is fairly consistent across the range of the data in the scale-location plot below, although it is not perfect at the far end (possibly due to sparseness of the data). We can also run the formal Breusch-Pagan test to check against the null hypothesis of homoskedasticity, and we find the p-value is too large to reject the null hypothesis. We therefore assume that the homoskedasticity assumption is met.
-```{r}
-plot(model2, which=3)
-bptest(model2)
-```
 
-+ CML6 (Normality of errors): The distribution of residuals plot shows that the residual distribution is quite close to the normal distribution shape. Furthermore, the Q-Q plot shows that our error follows the normal distribution quite closely. Therefore we can assume that CLM6 is met for model 2.
+    ```{r}
+    plot(model2, which=3)
+    bptest(model2)
+    ```
+
++ CML6 (Normality of errors): The distribution of residuals plot shows that the residual distribution is quite close to the normal distribution shape. Furthermore, the Q-Q plot shows that our error follows the normal distribution quite closely. Therefore we can assume that CLM6 is met for Model 2.
 
     ```{r}
     hist(model2$residuals, main ="Distribution of Model 2 Residuals", xlab = "Residual")
@@ -307,18 +312,19 @@ bptest(model2)
 In Model 3, we include additional covariates that are problematic for our model, primarily because they are highly correlated with some of the variables we added in Model 2.
 
 ```{r}
-model3 <- lm(bwght ~ monpre + npvis + cigs + drink + mage + magesq + meduc + fage + feduc + male + mwhte + mblck + fwhte + fblck, data = v)
+model3 <- lm(bwght ~ monpre + npvis + cigs + drink + mage + magesq + meduc + fage + feduc +
+               male + mwhte + mblck + fwhte + fblck, data = v)
 coeftest(model3, vcov = vcovHC) 
 summary(model3)$r.square
 AIC(model3)
 ```
 
-The additional variables have caused an interesting change to our results. The majority of the coefficients stay roughly the same, and `fage` and `feduc` are not significant variables. However, the coefficients on `mwhte` and `mblck` have turned from positive to negative values, while the coefficients on the father's race indicators are highly significant and large positive numbers. The change in the mother's race coefficients can be explained by the fact that we included highly correlated variables in the model, which together distort our results. In almost all cases, the father's positive race coefficient will offset the mother's negative coefficient, since almost all mother-father pairs are the same race. See our section on CLM3 for further discussion.
+The additional variables have caused an interesting change to our results. The majority of the coefficients stay roughly the same, and `fage` and `feduc` are not significant variables. However, the coefficients on `mwhte` and `mblck` have turned from positive to negative values, while the coefficients on the father's race indicators are highly significant and large positive numbers. The change in the mother's race coefficients can be explained by the fact that we included highly correlated variables in the model, which together distort our results. In almost all cases, the father's positive race coefficient will offset the mother's negative coefficient, since almost all mother-father pairs are the same race. See our section on CLM3 for additional discussion.
 
 #### Assessment of CLM Assumptions for Model 3
 
 - CLM1-CLM2: Same as models 1 and 2.
-- CLM3 (No perfect collinearity): As shown in **Correlation Analysis**, there are no perfect correlations between any two variables, but the correlation between `fwhte`/`mwhte` and `fblck`/`mblck` are both nearly 0.9. The VIF scores below for these four variables are high due to their high correlations. Althought they are not perfectly collinear, this model does have a multicollinearity problem.
+- CLM3 (No perfect collinearity): As shown in **Correlation Analysis**, there are no perfect correlations between any two variables, but the correlation between `fwhte`/`mwhte` and `fblck`/`mblck` are both nearly 0.9. The VIF scores below for these four variables are high due to their high correlations. Although they are not perfectly collinear, this model does have a multicollinearity problem.
 
     ```{r}
     cor(v$fwhte,v$mwhte)
@@ -337,7 +343,7 @@ plot(model3, which=3)
 bptest(model3)
 ```
 
-+ CML6 (Normality): The distribution of residuals plot shows that the residuals are quite close to the normal distribution shape. Furthermore, the Q-Q plot shows that our error follows the normal distribution quite closely. Therefore we can assume that CLM6 is met for model 3.
++ CML6 (Normality of errors): The distribution of residuals plot shows that the residuals are quite close to the normal distribution shape. Furthermore, the Q-Q plot shows that our error follows the normal distribution quite closely. Therefore we can assume that CLM6 is met for Model 3.
 
 ```{r}
 hist(model3$residuals, main = "Distribution of Model 3 Residuals", xlab = "Residual")
@@ -346,13 +352,13 @@ plot(model3, which =2)
 
 # Summary of Results
 
-Please see the **Appendix** for a table showing our results for models 1, 2, and 3. Model 1 is the simplest and only shows our two variables of interest, `monpre` and `npvis`, of which `npvis` is statistically but not practically significant. Model 2 adds additiopnal covariates and uncovers some interesting relationships between `bwght` and other predictor variables, while model 3 adds even more covariates but results in distorted coefficients for some variables due to their high correlations with other predictor variables.
+Please see the **Appendix** for a table showing our results for Models 1, 2, and 3. Model 1 is the simplest and only shows our two variables of interest, `monpre` and `npvis`, of which `npvis` is statistically but not practically significant. Model 2 adds additional covariates and uncovers some interesting relationships between `bwght` and other predictor variables, while model 3 adds even more covariates but results in distorted coefficients for some variables due to their high correlations with other predictor variables.
 
 Unfortunately all of these models have a low $R^2$, which means we are lacking some key variables that could explain infant birthweights.
 
 # Causality
 
-In Model 1, Model 2, and Model 3, we pointed out that the assumptions CLM1, CLM2, CLM3 are met. In each model, `npvis` was also shown to be statistically significant, while `monpre` was either not significant or had a counterintuitive coefficient sign, so in this section we will focus on investigating `npvis`.
+In Model 1, Model 2, and Model 3, we pointed out that the assumptions CLM1, CLM2, CLM3 are met. In each model, `npvis` was also shown to be statistically significant, while `monpre` was either not significant or had a counterintuitive coefficient sign (possibly due to moderate correlation with `npvis`), so in this section we will focus on investigating `npvis`.
 
 To further check the causality of `npvis` on baby weight, we test if `npvis` is correlated with the error term:
 
@@ -362,36 +368,32 @@ cor(v$npvis, model2$residuals)
 cor(v$npvis, model3$residuals)
 ```
 
-The numbers all come out to very near zero. This means that we can assume $\frac{\partial (bwght)}{\partial(npvis)} = \beta_{npvis}$, since $\frac{\partial u}{\partial(npvis)} = 0$. Therefore, we can say that npvis does have a positive causal effect on birthweight (all `npvis` coefficients are positive).
+The numbers all come out to very near zero. This means manipulations to `npvis` do not impact the error term (i.e. $\frac{\partial u}{\partial(npvis)} = 0$), so we can assume that $\frac{\partial (bwght)}{\partial(npvis)} = \beta_{npvis}$. Therefore, we can say that `npvis` does have a positive causal effect on birthweight (note all `npvis` coefficients are positive).
 
-### Direction of biases
+One way we could go further to establish a causal relationship would be to run an experiment. However, in this context a true experiment would be unethical, because we would have to assign some women to receive no prenatal treatment.
 
-We believe that there are other factors that can impact the weight of a newborn baby. These may include the mother's and father's health condition (e.g. diet or presence of specific conditions such as gestational diabetes), and the mother's quality of life during pregnancy (e.g. stress level), income, among others. Therefore, none of the above three models above accurately refects the causality of `npvis` and `monpre` on `bwght`.
+### Direction of Biases
 
-However, we still can draw some conclusions about causality by making some additional assumptions. We will use model1 in this analysis.
+As noted previously, we believe there are other factors that may impact the weight of a newborn baby. These may include the mother's and father's income, their health condition (e.g. the mother's diet or the presence of specific conditions such as gestational diabetes), and the mother's quality of life during pregnancy (e.g. stress level), among others. Therefore, the coefficients on `npvis` and `monpre` may be biased in the above three models. We will demonstrate how this could be possible. For simplicity's sake, in this analysis we will consider only `npvis`, and ignore `monpre` and other covariates. As shown below, `npvis` is significant.
 
-First, let's assume the only missing independent variable from model 1 compared to a 'true' population model is the mother's income (`in`). In model 1, from earlier analysis, `npvis` is the only significant variable so we can ignore `monpre`. 
-There have been researches that pointed out low income can negatively impact infants's birth weight. 
-For exampnle: https://www.guttmacher.org/journals/psrh/2007/infants-low-birth-weight-linked-low-income-mothers-chronic-stress
-
-We can safely assume that `in` has a positive effect on the baby's weight -> $\beta_{in} > 0$.
-
-
-We also assume that the better income the mother has, the more the number of prenatal visits she makes during preganancy, so the coeffient of `npvis` on `hf` is positive ($\beta_{npvis:in} > 0$).
-This can be crossed check from relavant researches in the field. This link (http://www.apa.org/pi/ses/resources/publications/women.aspx)
-cites this research: Lower income pregnant women receive less prenatal care, experience higher levels of stress and are more likely to deliver premature babies (Adler, 2006). 
-
-So the bias is Beta(in)*Beta(npvis:in) > 0. In other words, the current regression in model 1 for npvis seems to overestimate the coefficient for npvis.
-
-In model 1, we also included in addition to npvis the variable monpre. 
-It has relative high negative correlation with npvis (``r cor(v$npvis, v$monpre)``).
-As it's not significant and close to zero, it does not introduce more bias to the model but it does add variance in the beta estimation for npvis.
-In fact, if we just regress healthScore on npvis, the standard error of npvis coefficient is reduced and the t value is higher than in the model 1. (3.2 vs. 2.9).  
 ```{r}
-model4 = lm(v$bwght~v$npvis)
+model4 = lm(bwght ~ npvis, data = v)
 coeftest(model4)
 ```
-This shows that monpre is indeed absorbing some of the causal effect from npvis.
+
+Now, let's assume the only missing independent variable from our model, as compared to a 'true' population model, is the mother's income (`in`). Thus the population model is:
+
+$$ bwght = \beta_0 + \beta_{npvis} npvis + \beta_{in} in + u $$
+
+Research has linked low incomes to low infant birthweights\footnote{https://www.guttmacher.org/journals/psrh/2007/infants-low-birth-weight-linked-low-income-mothers-chronic-stress}. This means we can safely assume that `in` has a positive effect on the baby's weight, i.e. $\beta_{in} > 0$.
+
+Now we consider the regression of `npvis` on our missing variable `in`.
+
+$$ npvis = \delta_0 + \delta_{in} in + \nu $$
+
+Research has shown that lower-income pregnant women receive less prenatal care, experience higher levels of stress and are more likely to deliver premature babies than other women\footnote{http://www.apa.org/pi/ses/resources/publications/women.aspx}. Therefore we assume that the higher the mother's income, the higher the number of prenatal visits she makes during pregnancy, so $\delta_{in} > 0$.
+
+So the bias on $\beta_{npvis}$ is $\beta_{in} \cdot \delta_{in}$, which is > 0. In other words, our current model, which is missing income, seems to overestimate the coefficient for `npvis`. Thus, while we find evidence that our model is causal, we must also consider that the coefficient on our prenatal care variable may be biased. This would mean we are incorrectly estimating the effect size.
 
 # Conclusion
 
@@ -399,9 +401,9 @@ Our investigation of the impact of prenatal care on infant health outcomes has r
 
 + *Number of prenatal visits:* In all of our models, this variable was statistically, but not practically, significant. We suspect that our measures of prenatal care were not sufficient to measure the full impact of prenatal care, and further research should aim to include variables relating to the quality of care received and the specific tasks performed during the visits. Furthermore, mothers and babies with certain health conditions may need extra prenatal visits to manage those conditions, and this should be accounted for in the model.
 
-+ *Highly correlated parents:* The mother's and father's demographics were highly correlated. Including both in the model caused distortions in our results, so we believe it is best to include only the mother's demographics.
++ *Highly correlated parents:* The mother's and father's demographics were highly correlated. Including both in the model caused distortions in our results, so we believe it is best to include only one parent's demographics.
 
-+ *Omitted variables:* Our low $R^2$ values show that we are missing some key variables that would help explain the variation in `bwght`. Examples include the mother's income, diet, stress level, and quality of care received, among others.
++ *Omitted variables:* Our low $R^2$ values show that we are missing some key variables that would help explain the variation in `bwght`. Examples include the mother's income, diet, stress level, and quality of care received, among others. It is possible that these omitted variables have biased our results.
 
 + *Use of birth weight as the outcome variable:* Birthweight is an important part of infant health, but it is not the only possible measure, and may not even be the best measure. We were limited by our own knowledge, which does not extend to the use of ordinal variables (such as APGAR scores) as an outcome, as well as by our data, which doesn't include information on other possible measures such as length of gestation.
 
