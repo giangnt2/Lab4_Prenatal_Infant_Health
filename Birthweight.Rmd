@@ -352,17 +352,19 @@ Unfortunately all of these models have a low $R^2$, which means we are lacking s
 
 # Causality
 
-**Note from Carmen: I do not think this is what the assignment is asking us to do. We are making a lot of assumptions here and I don't support all of them (for example, the idea that a healthy mother makes fewer prenatal visits -- a mother who makes 0 prenatal visits is probably poor or unhealthy or lacks access to healthcare). Our week 14 async videos clearly define causality in terms of the model error, and so we should discuss that here.**
-In model1, model2 and model3, we  pointed out that the assumptions CLM1, CLM2, CLM3 are met. In all the models, npvis was also proved to be statistically significant while monpre is not significant so we now just investigate npvis.
-To further check the causality of npvis to baby weight, we test if the npvis is not correlated with the error term 
+In Model 1, Model 2, and Model 3, we pointed out that the assumptions CLM1, CLM2, CLM3 are met. In each model, `npvis` was also shown to be statistically significant, while `monpre` was either not significant or had a counterintuitive coefficient sign, so in this section we will focus on investigating `npvis`.
+
+To further check the causality of `npvis` on baby weight, we test if `npvis` is correlated with the error term:
+
 ```{r}
 cor(v$npvis, model1$residuals)
 cor(v$npvis, model2$residuals)
 cor(v$npvis, model3$residuals)
 ```
-The numbers all come out to very near zero. This means that we can assume $d(bwght)/d(npvis) =beta_{npvis}$ as $d(u)/d(npvis) = 0 $
-So we can say that npvis does have positive causal effect to baby's weight (all npvis coefficients are positive).
-## Direction of biases
+
+The numbers all come out to very near zero. This means that we can assume $\frac{\partial (bwght)}{\partial(npvis)} = \beta_{npvis}$, since $\frac{\partial u}{\partial(npvis)} = 0$. Therefore, we can say that npvis does have a positive causal effect on birthweight (all `npvis` coefficients are positive).
+
+### Direction of biases
 
 We believe that there are other factors that can impact the weight of a newborn baby. These may include the mother's and father's health condition (e.g. diet or presence of specific conditions such as gestational diabetes), and the mother's quality of life during pregnancy (e.g. stress level), income, among others. Therefore, none of the above three models above accurately refects the causality of `npvis` and `monpre` on `bwght`.
 
@@ -393,7 +395,17 @@ This shows that monpre is indeed absorbing some of the causal effect from npvis.
 
 # Conclusion
 
-TO BE WRITTEN
+Our investigation of the impact of prenatal care on infant health outcomes has revealed several interesting relationships (or lack thereof) and unique features of the data.
+
++ *Number of prenatal visits:* In all of our models, this variable was statistically, but not practically, significant. We suspect that our measures of prenatal care were not sufficient to measure the full impact of prenatal care, and further research should aim to include variables relating to the quality of care received and the specific tasks performed during the visits. Furthermore, mothers and babies with certain health conditions may need extra prenatal visits to manage those conditions, and this should be accounted for in the model.
+
++ *Highly correlated parents:* The mother's and father's demographics were highly correlated. Including both in the model caused distortions in our results, so we believe it is best to include only the mother's demographics.
+
++ *Omitted variables:* Our low $R^2$ values show that we are missing some key variables that would help explain the variation in `bwght`. Examples include the mother's income, diet, stress level, and quality of care received, among others.
+
++ *Use of birth weight as the outcome variable:* Birthweight is an important part of infant health, but it is not the only possible measure, and may not even be the best measure. We were limited by our own knowledge, which does not extend to the use of ordinal variables (such as APGAR scores) as an outcome, as well as by our data, which doesn't include information on other possible measures such as length of gestation.
+
+Overall, we do find a small amount of evidence that prenatal care can have a positive impact on infant birthweight, but recommend further research to get a fuller and more accurate picture of the effect size.
 
 # Appendix
 
