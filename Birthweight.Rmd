@@ -22,7 +22,23 @@ library(stargazer)
 
 # Introduction
 
-TO BE WRITTEN
+This report will analyze the relationship between prenatal care and health outcomes for newborn infants. Our team has been hired by a health advocacy organization (HAO) to study a sample of data from the Center for Disease Control's National Center for Health Statistics and from birth certificates, with a focus on helping the HAO understand the stated relationship. Our findings may be used to develop the HAO's advocacy agenda.
+
+Since our primary goal is to understand the impact of prenatal care, we have divided our variables into the following categories:
+
++ Outcome (dependent) variables: `bwght`, `omaps`, `fmaps`
+    + Outcomes that are a function of `bwght`: `lbw`, `vlbw`
++ Key explanatory (independent) variables: `monpre`, `npvis`
++ Additional covariates (independent variables):
+    + Demographics: `mage`, `meduc`, `fage`, `feduc`, `male`, `mwhte`, `mblck`, `moth`, `fwhte`, `fblck`, `foth`
+    + Vices: `cigs`, `drink`
+
+As you read this report, keep the following caveats in mind:  
+
+1. We cannot account for how our data sample was collected, so it is possible the data is not a random sample. We suspect it is not representative of the entire U.S. population.
+2. There are some additional variables that may affect infant health, which we are unable to account for. These include, but are not limited to: the mother's diet, the quality of care received, and the presence of diseases that can be passed from mother to child (such as HIV or hemophilia).
+
+The following sections document our analysis and findings.
 
 # Exploratory Data Analysis
 
