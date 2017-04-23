@@ -336,7 +336,7 @@ Unfortunately all of these models have a low $R^2$, which means we are lacking s
 
 # Causality
 
-**Note from Carmen: I do not think this is what the assignment is asking us to do. We are making a lot of assumptions here and I don't support all of them (for example, the idea that a healthy mother makes fewer prenatal visits -- a mother who makes 0 prenatal visits is probably poor or unhealthy or lacks access to healthcare). Our week 14 async videos clearly define causality in terms of the model error, and that is what we should discuss here.**
+**Note from Carmen: I do not think this is what the assignment is asking us to do. We are making a lot of assumptions here and I don't support all of them (for example, the idea that a healthy mother makes fewer prenatal visits -- a mother who makes 0 prenatal visits is probably poor or unhealthy or lacks access to healthcare). Our week 14 async videos clearly define causality in terms of the model error, and so we should discuss that here.**
 
 We believe that there are other factors that can impact the weight of a newborn baby. These may include the mother's and father's health condition (e.g. diet or presence of specific conditions such as gestational diabetes), and the mother's quality of life during pregnancy (e.g. stress level), among others. Therefore, none of the above three models above accurately refects the causality of `npvis` and `monpre` on `bwght`.
 
