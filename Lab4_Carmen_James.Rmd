@@ -8,86 +8,150 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 load("bwght_w203.Rdata")
-library(lattice)
+library(car)
 library(caret)
+library(corrplot)
+library(gridExtra)
+library(ggplot2)
+library(lattice)
 library(lmtest)
 library(sandwich)
-library(corrplot)
 library(scales)
-
-
+library(stargazer)
 ```
 
 # Introduction
 
 # Exploratory Data Analysis
 
-```{r}
-# Clean up NA values 
-v = na.exclude(data, complete.cases(v))
-
-#Mom
-hist(v$mage) #Very normal, avg late 20s
-hist(v$magesq) #Slightly right skewed
-hist(v$meduc) #Spikes at 12 and 16
-hist(v$cigs) #Big mass at 0. Right skewed. Above 20, corresponds to packs.
-hist(v$drink) #Big mass at 0. Right skewed.
-
-#Dad
-hist(v$fage) #Slight right skew, avg early 30s
-hist(v$feduc) #Spikes at 12 and 16
-
-#Prenatal care
-hist(v$monpre) #Majority begin in first 2 months; right skewed
-hist(v$npvis) #Spike at 10-15 visits
-hist(v$npvissq) #Right skewed
-
-#Baby
-hist(v$bwght) #Normalish, avg 3000-3500 grams (6.6-7.7 lbs)
-hist(v$lbwght) #Bit left skewed
-hist(v$omaps) #Left skewed, almost all 8 or 9
-hist(v$fmaps) #Left skewed, almost all 9
-table(v$lbw) #Only 30 lbw (1.6%)
-table(v$vlbw) #Only 13 vlbw (0.7%)
-table(v$male) #941 male (51.4%)
-```
-
-Our dataset contains data on the race of both the father and mother of the baby, in the form of indicator variables for "white", "black", and "other" races. For illustrative purposes, we combine the indicator variables into a single "race" variable for each parent, which allows us to view a table of the parents' races. Two things stand out in this table:
-
-1. Almost 90% of parents in this dataset are white.
-2. Over 95% of couples lie along the diagonal of the table, which means the mother and father are the same race.
+Our dataset has records for `r formatC(length(data$bwght), big.mark=",")` newborns, however some newborns are missing data for some variables. For our analysis, we will limit our dataset to only those newborns who have data available for every variable (i.e. complete cases). There are `r formatC(length(data[complete.cases(data),]$bwght), big.mark=",")` of these newborns.
 
 ```{r}
-#Race Table
-mrace <- as.factor(c())
-levels(mrace) <- c("white", "black", "other")
-
-for (i in 1:length(v$bwght)){
-  if (v[i,]$mwhte == 1) {mrace[i] <- "white"}
-  else if (v[i,]$mblck == 1) {mrace[i] <- "black"}
-  else if (v[i,]$moth == 1) {mrace[i] <- "other"}
-}
-
-frace <- as.factor(c())
-levels(frace) <- c("white", "black", "other")
-
-for (i in 1:length(v$bwght)){
-  
-  if (v[i,]$fwhte == 1) {frace[i] <- "white"}
-  else if (v[i,]$fblck == 1) {frace[i] <- "black"}
-  else if (v[i,]$foth == 1) {frace[i] <- "other"}
-}
-
-table(mrace, frace)
-
-# Could do a boxplot by race, e.g.:
-boxplot(meduc ~ mrace, data = v)
-# But black & other plots don't have a lot of data
+v <- na.exclude(data, complete.cases(v))
 ```
+
+### Infant's Health
+
+We have two methods of measuring the infant's health: by birthweight or by APGAR score. `bwght` is fairly normally distributed, with a mean weight of `r formatC(round(mean(v$bwght), 0), big.mark=",")` grams.
+
+```{r}
+ggplot(v, aes(x = bwght)) + geom_histogram(binwidth = 200) +
+  ggtitle("Histogram of Infant Birthweights") + xlab("Birthweight (grams)") + ylab("# Infants")
+```
+
+Of the infants in our sample:
+
++ `r sum(v$lbw)` infants, or `r round(100*sum(v$lbw)/length(v$lbw), 1)`%, are considered "low birthweight", meaning they weigh less than 2,000 grams.
++ `r sum(v$vlbw)` infants, or `r round(100*sum(v$vlbw)/length(v$vlbw), 1)`%, are considered "very low birthweight", meaning they weigh less than 1,500 grams.
+
+APGAR scores are an ordinal measure ranging from 0-10, and are used soon after birth to rate the health of newborns. We have data on our newborns' APGAR scores one minute and five minutes after birth. These variables are highly left-skewed, as most newborns have a score of 8 or 9 after one minute, and have moved to a score of 9 or even 10 after five minutes.
+
+```{r}
+plot.omaps <- ggplot(v, aes(x = omaps)) + geom_histogram(bins = 11) + ggtitle("Histograms of APGAR Scores") +
+  scale_x_continuous(name = "1-Minute APGAR Score", breaks = seq(0, 10, by = 2)) +
+  scale_y_continuous(name = "# Infants", limits = c(0, 1500))
+plot.fmaps <- ggplot(v, aes(x = fmaps)) + geom_histogram(bins = 11) + ggtitle("") +
+  scale_x_continuous(name = "5-Minute APGAR Score", breaks = seq(0, 10, by = 2)) +
+  scale_y_continuous(name = "", limits = c(0, 1500))
+grid.arrange(plot.omaps, plot.fmaps, ncol = 2)
+```
+
+### Prenatal Care
+
+We have two ways of measuring prenatal care:
+
+1. `monpre` is the month prenatal care began and ranges from 0 to 9.
+2. `npvis` is the number of prenatal visits, and ranges from 0 to 40.
+
+These variables are somewhat negatively correlated (-`r round(cor(v$monpre, v$npvis), 3)`), since generally speaking, starting prenatal care earlier in pregnancy gives the mother more opportunities to make additional prenatal visits.
+
+In our dataset, `monpre` most is right skewed and most mothers have begun prenatal care by their second month of pregnancy. Most mothers went for 10-15 prenatal visits during their pregnancy, but the variable has a long right tail. Mothers with an extremely high number of prenatal visits likely had a high-risk pregnancy for one reason or another.
+
+```{r}
+plot.monpre <- ggplot(v, aes(x = monpre)) + geom_histogram(bins = 10) +
+  scale_x_continuous(name = "Month Prenatal Care Began", breaks = seq(0, 9, by = 2)) +
+  scale_y_continuous(name = "# Infants", limits = c(0, 750)) +
+  ggtitle("Histograms for Prenatal Care") + ylab("# Infants")
+plot.npvis <- ggplot(v, aes(x = npvis)) + geom_histogram(binwidth = 2) +
+  scale_y_continuous(name = "", limits = c(0, 750)) +
+  ggtitle("") + xlab("Number of Prenatal Visits")
+grid.arrange(plot.monpre, plot.npvis, ncol = 2)
+```
+
+### Covariates
+
+Our dataset includes additional covariates related to demographics and the mother's use of contraindicated substances ("vices") during pregnancy. Our vice variables describe the number of cigarettes and alcoholic drinks consumed by the mother during pregnancy. Both of these variables are highly right skewed, with large masses at 0. Note that for cigarettes, there seems to be some measurement error at the high end, as mothers appear to report the approximate number of packs rather than the exact number of cigarettes smoked (1 pack = 20 cigarettes). 
+
+```{r}
+plot.cigs <- ggplot(v, aes(x = cigs)) + geom_histogram(binwidth = 1) +
+  scale_x_continuous(name = "Avg. Cigarettes per Day") +
+  scale_y_continuous(name = "# Infants", limits = c(0, 1600)) +
+  ggtitle("Histograms of Vice Variables")
+plot.drink <- ggplot(v, aes(x = drink)) + geom_histogram(binwidth = 1) + ggtitle("") +
+  scale_x_continuous(name = "Avg. Drinks per Week", breaks = seq(0, 9, by = 2)) +
+  scale_y_continuous(name = "", limits = c(0, 1600))
+grid.arrange(plot.cigs, plot.drink, ncol = 2)
+```
+
+We have the following information on the demographics of the mother, father, and baby:
+
++ `r sum(v$male)` infants, or `r round(100*sum(v$male)/length(v$male), 1)`%, are male.
++ The mother's age is quite normally distributed, is postively correlated with the father's age (+`r round(cor(v$mage, v$fage), 3)`), and has a median of `r median(v$mage)`. Meanwhile, the father's age has a slightly higher median at `r median(v$fage)`, and has a slightly longer right tail.
+
+    ```{r}
+    plot.mage <- ggplot(v, aes(x = mage)) + geom_histogram(binwidth = 2, fill = "red", alpha = 0.8) +
+      scale_x_continuous(name = "Mother's Age", limits = c(15,65)) +
+      scale_y_continuous(name = "# Infants", limits = c(0, 350)) +
+      ggtitle("Histograms of Parent Age")
+    plot.fage <- ggplot(v, aes(x = fage)) + geom_histogram(binwidth = 2, fill = "blue", alpha = 0.8) +
+      scale_x_continuous(name = "Father's Age", limits = c(15,65)) +
+      scale_y_continuous(name = "", limits = c(0, 350)) + ggtitle("")
+    grid.arrange(plot.mage, plot.fage, ncol = 2)
+    ```
+
++ The mother's and father's educations are also quite positively correlated (+`r round(cor(v$meduc, v$feduc), 3)`), and have similar distributions with spikes at 12 years (high school diploma), 14 years (associate's degree), and 16 years (bachelor's degree).
+
+    ```{r}
+    plot.meduc <- ggplot(v, aes(x = meduc)) + geom_histogram(binwidth = 1, fill = "red", alpha = 0.8) +
+      scale_x_continuous(name = "Mother's Education (Years)", limits = c(3,17)) +
+      scale_y_continuous(name = "# Infants", limits = c(0, 600)) +
+      ggtitle("Histograms of Parent Education")
+    plot.feduc <- ggplot(v, aes(x = feduc)) + geom_histogram(binwidth = 1, fill = "blue", alpha = 0.8) +
+      scale_x_continuous(name = "Father's Education (Years)", limits = c(3,17)) +
+      scale_y_continuous(name = "", limits = c(0, 600)) + ggtitle("")
+    grid.arrange(plot.meduc, plot.feduc, ncol = 2)
+    ```
+
++ The race of the mother and father is more complicated to analyze, since we have 3 indicator variables for each parent, which correspond to "white", "black", and "other" races. For ease of analysis, we combine the indicator variables into a single "race" variable for each parent, which allows us to view a table of the parents' races. Two things stand out in this table:
+
+    1. Almost 90% of parents in this dataset are white.
+    2. Over 95% of couples lie along the diagonal of the table, which means the mother and father are the same race.
+
+    ```{r}
+    mrace <- as.factor(c())
+    levels(mrace) <- c("white", "black", "other")
+    
+    for (i in 1:length(v$bwght)){
+      if (v[i,]$mwhte == 1) {mrace[i] <- "white"}
+      else if (v[i,]$mblck == 1) {mrace[i] <- "black"}
+      else if (v[i,]$moth == 1) {mrace[i] <- "other"}
+    }
+    
+    frace <- as.factor(c())
+    levels(frace) <- c("white", "black", "other")
+    
+    for (i in 1:length(v$bwght)){
+      if (v[i,]$fwhte == 1) {frace[i] <- "white"}
+      else if (v[i,]$fblck == 1) {frace[i] <- "black"}
+      else if (v[i,]$foth == 1) {frace[i] <- "other"}
+    }
+    
+    table(mrace, frace)
+    ```
+
 ### Correlation Analysis
 
-We build a correlation matrix to identify pairs of variables that have high correlation relationship.
-Looking at the corelation matrix below, we can see that the following are highly correlated:
+We have created a correlation matrix to identify pairs of variables that are highly correlated. Looking at the corelation matrix below, we can see that the following are highly correlated:
 
 - Race of the baby's mother and father
 - Ages of the baby's mother and father
@@ -97,100 +161,223 @@ Also, the education levels of the mother and father correlate positively with th
 
 ```{r}
 cor=cor(v)
-corrplot(cor, method="circle",diag = FALSE)
+corrplot(cor, method="circle", diag = FALSE, tl.col = "black")
 ```
 
 # Model Specifications
 
 ### Outcome Variable
 
-To evaluate the well-being of a newborn baby, we combine two measures of a newborn's well-being: its two APGAR scores, which evaluate the baby's health immediately after birth, and its birth weight. Since APGAR scores are measured on a 0-10 discrete scale while birth weight is continuous, we have transformed birth weight to 0-10 scale so it can be more easily combined with the APGAR scores. Our new outcome variable `health Score` is a weighted average of the one-minute APGAR score, 5-minute APGAR score, and birth weight score. We assume weight is more important than the APGAR scores in this exercise, so we give it a weight of 2 in the average formula.
-
-```{r}
-v$weightScore <- rescale(v$bwght,to=c(0,10))
-# Note: weightScore not weighted in the formula below. Is 2 the correct weight?
-v$healthScore <- (v$omaps+v$fmaps+v$weightScore)/3
-hist(v$weightScore)
-hist(v$healthScore)  
-```
-
-Unlike weight distribution, `healthScore` skews right, reflecting that the majority of newborn babies in the survey are in good health.
+To evaluate the well-being of a newborn baby, we will use `bwght` as the only depedent variable. While APGAR scores are useful measures and could potentially be combined with weight to form a more comprehensive measure of well-being, we do not have the domain expertise to create such an index, and will just stick with `bwght`. With regard to well-being, we assume that heavier is better.
 
 ### Selection of Independent Variables
 
-We will not include the variables `lbw` or `vlbw` in any model because these variables are a function of our outcome variable. In models 1 and 2 we will also exclude any variables that are highly correlated with each other, as determined in our **Correlation Analysis** section. For example, since we know that the mother's race and father's race have a correlation of 90%, we will not include them both in models 1 and 2.
+We will not include the variables `lbw` or `vlbw` in any model because these variables are a function of our outcome variable. In models 1 and 2 we will also exclude any variables that are highly correlated with each other, as determined in our **Correlation Analysis** section above. For example, since each of the pairs of mother and father race indicators (`mwhte`/`fwhte`, `mblck`/`fblck`, `moth`/`foth`) have a correlation of ~90%, we will not include the race indicators for both parents in models 1 and 2.
 
 ### Model 1
 
 Our first model contains only our variables of interest, which are the number of prenatal visits `npvis` and the month in which prenatal care began `monpre`. We use robust standard errors in all of our models.
 
 ```{r}
-model1 <- lm(healthScore ~ monpre + npvis , data = v) 
-coeftest(model1, vcov = vcovHC) 
-plot(model1) 
+model1 <- lm(bwght ~ monpre + npvis, data = v)
+coeftest(model1, vcov = vcovHC)
 summary(model1)$r.square
 AIC(model1)
-cor(v$monpre, v$npvis)
-
-vif(model1)
-bptest(model1)
-hist(model1$residuals)
 ```
-The coefficent variance test shows that `npvis` and `npvissq` are statistically significant. *Add some comments on the coefficients.*
+The coefficent variance test shows that `npvis` is highly statistically significant, although it may not be practically significant. Each additional prenatal visit is associated with a birthweight increase of about 4.5 grams for the newborn, which is less than half an ounce.
 
-However, our model's $R^2$ is very low. We need to include more covariates to explain the variation in newborn health, which we will do in our next model.
+Furthermore, our model's $R^2$ is very low. We need to include additional covariates to further explain the variation in newborn health, which we will do in our next model.
+
+#### Assessment of CLM Assumptions for Model 1
+
++ CLM1 (Linear in the parameters): The population model can be written as $bwght = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + ... + \beta_k x_k + u$, where $\beta_0$, $\beta_1$, ..., $\beta_k$ are the unknown parameters (constants) of interest and $u$ is an unobserved random error or disturbance term. This is the base assumption as we fit our data to a linear model.
++ CLM2 (Random sampling): Since we do not know how the data was collected, it is possible the sample is not random and is concentrated on a certain community. The most obvious example in our data is race, where we see an unusually high percentage of white mothers (``r round(sum(v$mwhte)/length(v$mwhte)*100, 1)`%, whereas 61.6% of the general US population was white non-Hispanic in 2015).
++ CLM3 (No perfect collinearity): This assumption is met. None of the variables are constant, and there is no perfect colinearity between `bwght`, `npvis`, and `monpre`. Furthermore, VIF scores for the independent variables are less than 4.
+
+```{r}
+var(v$npvis)
+var(v$monpre)
+cor(v$npvis, v$monpre)
+vif(model1)
+```
+
++ CLM4 (Zero conditional mean): The residuals vs. fitted plot below shows that the red smoothing curve (signifying the mean of the residuals) is very close to zero for most of the fitted values. Thus we can assume zero-conditional mean for our model.
+```{r}
+plot(model1, which=1)
+```
+
++ CLM5 (Homoskedasticity): Based on the residual vs. fitted plot, we cannot assume homoskedasticity. The width of the horizontal band increases at first, reaches a maximum around 3,400, then shrinks again. Also, we can run the formal Breusch-Pagan test to check against the null hypothesis of homoskedasticity, and we get a p-value smaller than 0.05, which means we can reject the null.
+```{r}
+bptest(model1)
+```
+
++ CML6 (Normality of errors): The distribution of residual plot shows that residual distribution is quite close to the normal distribution shape. Furthermore, the Q-Q plot shows that our error follows the normal distribution quite closely. Therefore we can assume that CLM6 is met for model 1.
+```{r}
+hist(model1$residuals, main ="Distribution of Residuals for Model 1", xlab = "Residual")
+plot(model1, which =2)
+```
 
 ### Model 2
+
 
 In Model 2, we add variables that we believe will improve the accuracy of our prediction *without introducing bias*.
 
 We add an indicator for the baby's gender and the variables that are related to the mother and her behavior: age, education, race, drinks per week, and cigarettes per day. We do not include information on the father's age, education, or race, since the mother's and father's information is highly correlated.
 
 ```{r}
-model2 <- lm(healthScore ~ monpre + npvis + npvissq + male + cigs + drink + mage + meduc + mwhte + mblck, data = v)
-coeftest(model2, vcov = vcovHC) # Significant vars: monpre (still positive), npvis, cigs, mage, male, moth
-plot(model2) # Meets assumptions relatively well
-AIC(model2) # Lower than model 1
-summary(model2)$r.square
+model2 <- lm(bwght ~ monpre + npvis + male + cigs + drink + mage + meduc + mwhte + mblck, data = v)
+coeftest(model2, vcov = vcovHC) # Significant vars: only npvis
+AIC(model2) # Basically same as model 1
+summary(model2)$r.square # Not much higher than model 1
+```
+-> VERY slight improvement in accurancy (r squared improved and AIC is slightly reduced compared to model 1)
+
+#### Assessment of CLM Assumptions for Model 2
+
+- CLM1-CLM2 are the same with model 1.
+- CLM3: No perfect collinearity 
+Non of the indepedent variables are constant and from ### Correlation Analysis### there's no perfect correlation between two variables .VIF scores bellow for all independent variables are less than 4. So we can say CLM3 assumption is met.
+
+```{r}
+var(v$npvis)
+var(v$monpre)
+var(v$male)
+var(v$cigs)
+var(v$drink)
+var(v$mage)
+var(v$meduc)
+var(v$mwhte)
+var(v$mblck)
 vif(model2)
+
+```
+
+
+- CLM4: Zero conditional mean ok
+```{r}
+plot(model2,which=1)
+
+```
+
+The residuals vs fitted plot shows that the red smoothing curve signifying the mean of the residuals is very close to zero for most of the fitted values. Thus we can assume zero-conditional mean
+
+- CLM5: Homoskedasticity
+The width of the horizontal band is quite consistent across the entire spectrum though not perfect at the far end.
+
+Also, we can run the formal Breusch-Pagan test to check against the null hypothesis of homoskedasticity:
+```{r}
 bptest(model2)
 ```
--> Slight Improvement in accurancy (r squared improved and AIC is slightly reduced compared to model 1)
+P value is large so we cannot reject the null hypothesis of homoskedasticity
+So we can assume that the homoskedasticity assumption is met.
+
+- CML6: Normality
+From CLM4, we can assume that the error is independent with independent variables. Now we test the normality of the error distribution.
+
+```{r}
+hist(model2$residuals, main ="Distribution of residuals for model 2")
+plot(model2, which =2)
+```
+
+The distribution of residual plot shows that residual is quite close to normal distribution shape.
+The QQ normality  shows that our error follows normal distribution quite closely.
+So we can assume that CLM6 is met for model 2.
+
 
 ### Model 3
 
 In Model 3, we include additional covariates that are problematic for our model, primarily because they are highly correlated with some of the variables we added in Model 2.
 
 ```{r}
-model3 <- lm(healthScore ~ monpre + npvis+ cigs + drink + mage +magesq+  meduc +  male + mwhte +mblck+fwhte+fblck, data = v)
-coeftest(model3, vcov = vcovHC) # Same significant vars as model 2 except suddenly race coeficients become significant 
-plot(model3) # Meets assumptions relatively well
+model3 <- lm(bwght ~ monpre + npvis + cigs + drink + mage +  meduc + fage + feduc + male + mwhte + mblck + fwhte + fblck, data = v)
+coeftest(model3, vcov = vcovHC) # Now all the race coeficients become significant 
+plot(model3) # Meets assumptions relatively well except homoskedasticity
 AIC(model3) # Basically the same as model 2
 summary(model3)$r.square
-vif(model3)
+vif(model3) # High among race variables!
 ```
 
-Some interesting effects now show up. mblck and mwhte coefficients now become significant but with negative values. This can be explained that in fact race is not significant but because we include highly correlated variables in, together they distort the test.  Father race have positive coefficient which is offsetted by negative coefficient values of mother race.
-Also, the VIF score show high values for all race variables which cleary mean the model become multicollinear.
+The additional variables have caused some interesting changes to our results. The coefficients on `mwhte` coefficient have become non-significant while that of `mblck' have become significant. Both are now turned from positive to negative values, indicating that black and white mothers have less healthy babies than our base race category of "other". This change can be explained by the fact that we included highly correlated variables in the model, which together distort our results. The father race indicators have positive coefficients, which are offset by the negative coefficients on the mother's race.
+
+This issue can also be seen in the VIFs for Model 3, which are very high for all of the race variables. This clearly indicates the model has acquired a multicollinearity problem.
+
+#### Assessment of CLM Assumptions for Model 3
+
+- CLM1-CLM2 are the same with model 1.
+- CLM3: No perfect collinearity 
+From ### Correlation Analysis### there's no perfect correlation between two variables but correlation between cor(v$fwhte,v$mwhte) and cor(v$fblck,v$mblck) are nearly 0.9.
+
+The VIF scores bellow for mwhte,mblck, fwhte and fblck are high due to high correlation.
+So it seems there's multicollinearity problem though there's no perfect correlation problem.
+
+```{r}
+cor(v$fwhte,v$mwhte)
+cor(v$fblck,v$mblck)
+
+vif(model3)
+
+```
 
 
-# Assessment of CLM Assumptions
-
-### Model 1
-
-- CLM1: ...
-- CLM2: ...
-- CLM3: No perfect collinearity but vif for both `npvis` and `npvissq` are high. This shows that this model is subject to a multicollinearity problem.
 - CLM4: Zero conditional mean ok
-- CLM5: Based on the graph, it looks like the data isn’t homoskedastic and shows that we should reject the null, meaning the data is hetroskedastic
-- CML6: data is not good at first but turn to normal with larger value 
+```{r}
+plot(model3,which=1)
 
-### Model 2
+```
 
-### Model 3
+The residuals vs fitted plot shows that the red smoothing curve signifying the mean of the residuals is very close to zero for most of the fitted values. Thus we can assume zero-conditional mean
+
+- CLM5: Homoskedasticity
+The width of the horizontal band is quite consistent across the entire spectrum though not perfect at the far end.
+
+Also, we can run the formal Breusch-Pagan test to check against the null hypothesis of homoskedasticity:
+```{r}
+bptest(model3)
+```
+P value is large so we cannot reject the null hypothesis of homoskedasticity
+So we can assume that the homoskedasticity assumption is met.
+
+- CML6: Normality
+From CLM4, we can assume that the error is independent with independent variables. Now we test the normality of the error distribution.
+
+```{r}
+hist(model3$residuals, main ="Distribution of residuals for model 3")
+plot(model3, which =2)
+```
+The distribution of residual plot shows that residual is quite close to normal distribution shape.
+The QQ normality  shows that our error follows normal distribution quite closely.
+So we can assume that CLM6 is met for model 3.
+
+
 
 # Summary of Results
 
 # Causality
+
+We believe that there're other factors that can impact the weight of a newborn baby. This may include the mother and father health condition, the mother quality of life during pregnancy among others.
+Thefore none of the above three models accurately refects the causality of npvis and monthpre to weight
+However, we still can draw some conclusions about causality by making some additional assumptions.
+We will use model 1 in this analysis.
+First, let assume the only missing independent variable from model 1 compared to a 'true' population model is the mother's health fitness (hf). 
+In model 1, from earlier analysis, npvis is the only significant variable so we can ignore monpre.
+We can safely assume that hf has positive effect on baby's weight -> Beta(hf) >0
+We also assume that the  healthier the mother is, the less number of prenatal visits she makes during preganancy, so beta coeffiency of npvis on hf is negative (beta(npvis:hf)<0)
+So the bias is Beta(hf)*Beta(npvis:hf) <0
+In other words, the current regression coefficient in model 1 for npvis is less than it should be in the population model. 
+
+In model 1, we also included in addition to npvis the variable monpre. 
+It has relative high negative correlation with npvis (``r cor(v$npvis, v$monpre)``).
+As it's not significant and close to zero, it does not introduce more bias to the model but it does add variance in the beta estimation for npvis.
+In fact, if we just regress healthScore on npvis, the standard error of npvis coefficient is reduced and the t value is higher than in the model 1. (3.2 vs. 2.9).  
+```{r}
+model4 = lm(v$bwght~v$npvis)
+coeftest(model4)
+```
+This shows that monpre indeed absorbing some of the causal effect from npvis.
+
+
+
+
+
 
 # Conclusion
